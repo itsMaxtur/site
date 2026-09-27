@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Так прошло наше лето 🌅</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #12101c;
+      font-family: 'Montserrat', sans-serif;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    /* ---------- Водопад из фотографий ---------- */
+    .waterfall {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      gap: 14px;
+      padding: 14px;
+      opacity: 0.85;
+      filter: saturate(1.05);
+    }
+
+    .column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      /* Каждая колонка — бесконечно "падающий" поток.
+         Контент дублируется в JS, поэтому сдвиг на -50% незаметен. */
+      animation: fall var(--speed, 40s) linear infinite;
+      will-change: transform;
+    }
+
+    .column:nth-child(2) { animation-direction: normal; }
+    .column:nth-child(3) { animation-duration: calc(var(--speed, 40s) * 1.3); }
+
+    @keyframes fall {
+      from { transform: translateY(0); }
+      to   { transform: translateY(-50%); }
+    }
+
+    .photo {
+      width: 100%;
+      height: auto;          /* фото разного размера — сохраняем пропорции */
+      border-radius: 12px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+      border: 3px solid rgba(255, 255, 255, 0.9);
+      flex-shrink: 0;
+      transform: rotate(var(--rot, 0deg));
+      transition: transform 0.4s ease, box-shadow 0.4s ease;
+    }
+
+    .photo:hover {
+      transform: rotate(0deg) scale(1.05);
+      box-shadow: 0 10px 32px rgba(255, 107, 149, 0.5);
+      z-index: 5;
+      position: relative;
+    }
+
+    /* ---------- Надпись поверх водопада ---------- */
+    .caption {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      text-align: center;
+      z-index: 10;
+      pointer-events: none;
+    }
+
+    .caption h1 {
+      font-family: 'Caveat', cursive;
+      font-size: clamp(3rem, 9vw, 7rem);
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 4px 40px rgba(0, 0, 0, 0.8), 0 0 80px rgba(255, 107, 149, 0.4);
+      animation: appear 2s ease both;
+      padding: 0 1rem;
+      background: rgba(18, 16, 28, 0.35);
+      backdrop-filter: blur(2px);
+      border-radius: 24px;
+      padding: 0.5rem 2.5rem;
+    }
+
+    @keyframes appear {
+      from { opacity: 0; transform: scale(0.7); filter: blur(10px); }
+      to   { opacity: 1; transform: scale(1); filter: blur(0); }
+    }
+
+    .caption p {
+      color: rgba(255, 255, 255, 0.8);
+      font-weight: 300;
+      font-size: clamp(0.95rem, 2.5vw, 1.2rem);
+      letter-spacing: 0.08em;
+      animation: appear 2s 1s ease both;
+    }
+
+    .error-msg {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255, 255, 255, 0.75);
+      text-align: center;
+      padding: 2rem;
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="waterfall" id="waterfall"></div>
+
+  <div class="caption">
+    <h1>Так прошло наше лето</h1>
+    <p>🌅 и оно было прекрасным 🌅</p>
+  </div>
+
+  <div class="error-msg" id="errorMsg">
+    Фото не найдены в папке <b>images/</b>.<br>
+    Положи туда фотографии и обнови страницу.<br><br>
+    Если открываешь сайт двойным кликом по файлу — запусти его через сервер,<br>
+    например расширение <b>Live Server</b> в VS Code или команда <b>python -m http.server</b>
+  </div>
+
+  <script>
+    // ---------- Загрузка списка фото из папки images/ ----------
+    // Если фото известны заранее, можно просто перечислить их здесь:
+    const FALLBACK_IMAGES = [
+      // 'images/1.jpg', 'images/2.jpg', ...
+    ];
+
+    const IMG_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'bmp'];
+
+    async function loadImageList() {
+      // Пытаемся получить список файлов из листинга папки (работает через Live Server / python -m http.server)
+      try {
+        const res = await fetch('images/');
+        if (!res.ok) throw new Error('no listing');
+        const html = await res.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const links = [...doc.querySelectorAll('a')]
+          .map(a => decodeURIComponent(a.getAttribute('href')))
+          .filter(href => {
+            const ext = href.split('.').pop().toLowerCase().split('?')[0];
+            return IMG_EXTENSIONS.includes(ext);
+          })
+          .map(href => 'images/' + href.split('/').pop());
+        if (links.length) return [...new Set(links)];
+      } catch (e) { /* file:// или сервер без листинга — идём к fallback */ }
+
+      // Fallback: пробуем проверить каждый файл из списка напрямую
+      const valid = [];
+      for (const src of FALLBACK_IMAGES) {
+        if (await imageExists(src)) valid.push(src);
+      }
+      return valid;
+    }
+
+    function imageExists(src) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve(true);
+        img.onerror = () => resolve(false);
+        img.src = src;
+      });
+    }
+
+    // ---------- Построение водопада ----------
+    function buildWaterfall(images) {
+      const waterfall = document.getElementById('waterfall');
+      const isMobile = window.innerWidth < 640;
+      const columnCount = isMobile ? 3 : (window.innerWidth < 1100 ? 4 : 5);
+
+      // Перемешиваем фото для каждой колонки по-своему
+      const shuffled = () => {
+        const arr = [...images];
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      };
+
+      for (let c = 0; c < columnCount; c++) {
+        const col = document.createElement('div');
+        col.className = 'column';
+        // Разная скорость падения у разных колонок — эффект "водопада"
+        col.style.setProperty('--speed', (8 + Math.random() * 6).toFixed(1) + 's');
+
+        const colImages = shuffled();
+        // Дублируем набор фото, чтобы анимация была бесшовной (сдвиг ровно на -50%)
+        const doubled = [...colImages, ...colImages];
+
+        doubled.forEach((src) => {
+          const img = document.createElement('img');
+          img.className = 'photo';
+          img.src = src;
+          img.alt = 'Наше лето';
+          img.loading = 'lazy';
+          img.style.setProperty('--rot', (Math.random() * 6 - 3).toFixed(1) + 'deg');
+          col.appendChild(img);
+        });
+
+        waterfall.appendChild(col);
+      }
+    }
+
+    // ---------- Запуск ----------
+    (async () => {
+      const images = await loadImageList();
+      if (images.length === 0) {
+        document.getElementById('errorMsg').style.display = 'flex';
+        return;
+      }
+      buildWaterfall(images);
+    })();
+  </script>
+</body>
+</html>

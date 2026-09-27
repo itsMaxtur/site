@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Сюрприз 🎁</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3rem;
+      font-family: 'Montserrat', sans-serif;
+      overflow: hidden;
+      background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 35%, #fbc2eb 70%, #a18cd1 100%);
+      background-size: 400% 400%;
+      animation: gradientShift 12s ease infinite;
+    }
+
+    @keyframes gradientShift {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .question {
+      font-family: 'Caveat', cursive;
+      font-size: clamp(2.5rem, 7vw, 5rem);
+      font-weight: 700;
+      color: #fff;
+      text-shadow: 0 4px 24px rgba(161, 108, 180, 0.45);
+      text-align: center;
+      padding: 0 1rem;
+      animation: floatIn 1.2s ease both;
+    }
+
+    @keyframes floatIn {
+      from { opacity: 0; transform: translateY(-30px) scale(0.9); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .buttons {
+      display: flex;
+      gap: 2.5rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      padding: 0 1rem;
+      animation: floatIn 1.2s 0.4s ease both;
+    }
+
+    .btn {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 600;
+      padding: 0.9rem 3.2rem;
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .btn-yes {
+      color: #fff;
+      background: linear-gradient(135deg, #ff6b95, #ff8e53);
+      box-shadow: 0 8px 24px rgba(255, 107, 149, 0.45);
+    }
+
+    .btn-yes:hover {
+      transform: scale(1.12);
+      box-shadow: 0 12px 32px rgba(255, 107, 149, 0.6);
+    }
+
+    .btn-no {
+      color: #7c6a86;
+      background: #fff;
+      box-shadow: 0 8px 24px rgba(161, 108, 180, 0.25);
+      /* Кнопка "убегает" — позиция задаётся из JS */
+      position: relative;
+      z-index: 10;
+      transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                  top 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                  transform 0.25s ease;
+    }
+
+    .btn-no.runaway {
+      position: fixed;
+      transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+                  top 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .hint {
+      position: absolute;
+      bottom: 1.5rem;
+      font-size: 0.85rem;
+      color: rgba(255, 255, 255, 0.65);
+      letter-spacing: 0.05em;
+    }
+  </style>
+</head>
+<body>
+
+  <h1 class="question">Ты готова к сюрпризу? 🎁</h1>
+
+  <div class="buttons">
+    <button class="btn btn-yes" onclick="location.href='summer.html'">Да 🤨</button>
+    <button class="btn btn-no" id="noBtn">Нет 😈</button>
+  </div>
+
+  <p class="hint">P.S. выбора у тебя всё равно нет~</p>
+
+  <script>
+    // ---------- Убегающая кнопка "Нет" ----------
+    const noBtn = document.getElementById('noBtn');
+    let attempts = 0;
+    const phrases = [
+      'Нет 😈', 'Точно нет?', 'Подумай ещё!', 'А если так?', 
+      'Ну пожалуйста 🥺', 'Ну ладно, да?', 'Не уйду!', 'Всё, я расстроен 😤'
+    ];
+
+    function runAway() {
+      const btn = noBtn.getBoundingClientRect();
+      // Первый раз: фиксируем кнопку и переносим в body.
+      // Это важно: у контейнера .buttons остаётся transform от анимации,
+      // который ломает position: fixed (кнопка "исчезала" за пределами экрана).
+      if (!noBtn.classList.contains('runaway')) {
+        noBtn.classList.add('runaway');
+        noBtn.style.left = btn.left + 'px';
+        noBtn.style.top = btn.top + 'px';
+        noBtn.style.margin = '0';
+        document.body.appendChild(noBtn);
+      }
+      // Случайная новая позиция с отступами от краёв экрана
+      const padding = 20;
+      const maxX = window.innerWidth - btn.width - padding;
+      const maxY = window.innerHeight - btn.height - padding;
+      const newX = padding + Math.random() * Math.max(maxX - padding, 1);
+      const newY = padding + Math.random() * Math.max(maxY - padding, 1);
+
+      noBtn.style.left = newX + 'px';
+      noBtn.style.top = newY + 'px';
+
+      attempts++;
+      if (attempts < phrases.length) {
+        noBtn.textContent = phrases[attempts];
+      }
+    }
+
+    noBtn.addEventListener('mouseenter', runAway);
+    noBtn.addEventListener('click', (e) => { e.preventDefault(); runAway(); });
+    noBtn.addEventListener('touchstart', (e) => { e.preventDefault(); runAway(); }, { passive: false });
+  </script>
+</body>
+</html>
