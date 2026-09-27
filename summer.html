@@ -130,35 +130,68 @@
   </div>
 
   <div class="error-msg" id="errorMsg">
-    Фото не найдены в папке <b>images/</b>.<br>
+    Фото не найдены в корне сайта (рядом с index.html).<br>
     Положи туда фотографии и обнови страницу.<br><br>
     Если открываешь сайт двойным кликом по файлу — запусти его через сервер,<br>
     например расширение <b>Live Server</b> в VS Code или команда <b>python -m http.server</b>
   </div>
 
   <script>
-    // ---------- Загрузка списка фото из папки images/ ----------
-    // Если фото известны заранее, можно просто перечислить их здесь:
+    // ---------- Загрузка списка фото из корня сайта ----------
+    // Список фото в корне (рядом с summer.html). Если добавишь новые фото —
+    // просто допиши их имена в этот список.
     const FALLBACK_IMAGES = [
-      // 'images/1.jpg', 'images/2.jpg', ...
+      'photo_1_2026-09-27_13-48-32.jpg',
+      'photo_2_2026-09-27_13-48-32.jpg',
+      'photo_3_2026-09-27_13-48-32.jpg',
+      'photo_4_2026-09-27_13-48-33.jpg',
+      'photo_5_2026-09-27_13-48-33.jpg',
+      'photo_6_2026-09-27_13-48-33.jpg',
+      'photo_7_2026-09-27_13-48-33.jpg',
+      'photo_8_2026-09-27_13-48-33.jpg',
+      'photo_9_2026-09-27_13-48-33.jpg',
+      'photo_10_2026-09-27_13-48-33.jpg',
+      'photo_11_2026-09-27_13-48-33.jpg',
+      'photo_12_2026-09-27_13-48-33.jpg',
+      'photo_13_2026-09-27_13-48-33.jpg',
+      'photo_14_2026-09-27_13-48-33.jpg',
+      'photo_15_2026-09-27_13-48-33.jpg',
+      'photo_16_2026-09-27_13-48-33.jpg',
+      'photo_17_2026-09-27_13-48-33.jpg',
+      'photo_18_2026-09-27_13-48-33.jpg',
+      'photo_19_2026-09-27_13-48-33.jpg',
+      'photo_20_2026-09-27_13-48-33.jpg',
+      'photo_21_2026-09-27_13-48-33.jpg',
+      'photo_22_2026-09-27_13-48-33.jpg',
+      'photo_23_2026-09-27_13-48-33.jpg',
+      'photo_24_2026-09-27_13-48-33.jpg',
+      'photo_25_2026-09-27_13-48-33.jpg',
+      'photo_26_2026-09-27_13-48-33.jpg',
+      'photo_27_2026-09-27_13-48-33.jpg',
+      'photo_28_2026-09-27_13-48-33.jpg',
+      'photo_29_2026-09-27_13-48-33.jpg',
+      'photo_30_2026-09-27_13-48-33.jpg',
     ];
 
     const IMG_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'bmp'];
+    // Файлы сайта, которые не нужно считать фотографиями
+    const SKIP_FILES = ['index.html', 'summer.html', 'readme.txt'];
 
     async function loadImageList() {
-      // Пытаемся получить список файлов из листинга папки (работает через Live Server / python -m http.server)
+      // Пытаемся получить список файлов из листинга корня сайта (работает через Live Server / python -m http.server)
       try {
-        const res = await fetch('images/');
+        const res = await fetch('./');
         if (!res.ok) throw new Error('no listing');
         const html = await res.text();
         const doc = new DOMParser().parseFromString(html, 'text/html');
         const links = [...doc.querySelectorAll('a')]
           .map(a => decodeURIComponent(a.getAttribute('href')))
           .filter(href => {
-            const ext = href.split('.').pop().toLowerCase().split('?')[0];
-            return IMG_EXTENSIONS.includes(ext);
+            const name = href.split('/').pop().split('?')[0].toLowerCase();
+            const ext = name.split('.').pop();
+            return IMG_EXTENSIONS.includes(ext) && !SKIP_FILES.includes(name);
           })
-          .map(href => 'images/' + href.split('/').pop());
+          .map(href => href.split('/').pop());
         if (links.length) return [...new Set(links)];
       } catch (e) { /* file:// или сервер без листинга — идём к fallback */ }
 
